@@ -1,0 +1,38 @@
+name: Auto-generate itdog_russia_inside_auto.yaml
+
+on:
+  schedule:
+    - cron: "0 0 * * *"  # каждый день в 00:00 UTC / 03:00 МСК
+  workflow_dispatch:
+
+jobs:
+  build_and_push_yaml:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Клонируем текущий репозиторий
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.ACCESS_TOKEN }}
+          ref: files  # работаем с веткой files
+
+      - name: Загружаем и преобразуем список доменов
+        run: |
+          echo "payload:" > itdog_russia_inside_auto.yaml
+          curl -sSL https://raw.githubusercontent.com/itdoginfo/allow-domains/refs/heads/main/Russia/inside-raw.lst \
+            | grep -v '^\s*$' \
+            | sed 's/^/  - +./' >> itdog_russia_inside_auto.yaml
+
+      - name: Коммитим изменения в ветку files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add itdog_russia_inside_auto.yaml
+          
+          if git diff --cached --quiet; then
+            echo "Файл не изменился — пропускаем коммит."
+          else
+            git commit -m "Auto-update itdog_russia_inside_auto.yaml on $(TZ='Europe/Moscow' date '+%Y-%m-%d %H:%M:%S') MSK"
+            git push origin files
+          fi
