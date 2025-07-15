@@ -21,7 +21,7 @@ jobs:
           echo "payload:" > itdog_russia_inside_auto.yaml
           curl -sSL https://raw.githubusercontent.com/itdoginfo/allow-domains/refs/heads/main/Russia/inside-raw.lst \
             | grep -v '^\s*$' \
-            | sed 's/^/  - +./' >> itdog_russia_inside_auto.yaml
+            | sed 's/^\(\.\)/  - +\1/; t; s/^/  - +./' >> itdog_russia_inside_auto.yaml
 
       - name: Коммитим изменения в ветку files
         run: |
