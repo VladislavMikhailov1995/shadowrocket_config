@@ -1,4 +1,4 @@
-name: Auto-generate itdog_russia_inside_auto.yaml
+name: Auto-generate yaml & list files
 
 on:
   schedule:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build_and_push_yaml:
+  build_and_push:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,23 +16,63 @@ jobs:
           token: ${{ secrets.ACCESS_TOKEN }}
           ref: files  # работаем с веткой files
 
-      - name: Загружаем и преобразуем список доменов
+      - name: Загружаем и преобразуем списки
         run: |
-          echo "payload:" > itdog_russia_inside_auto.yaml
-          curl -sSL https://raw.githubusercontent.com/itdoginfo/allow-domains/refs/heads/main/Russia/inside-raw.lst \
-            | grep -v '^\s*$' \
-            | sed 's/^\(\.\)/  - +\1/; t; s/^/  - +./' >> itdog_russia_inside_auto.yaml
+          # Папки для результатов
+          mkdir -p yaml_config list_config
+
+          # Массив входных файлов
+          FILES=(
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/refs/heads/main/Russia/inside-raw.lst"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/refs/heads/main/Services/youtube.lst"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/refs/heads/main/Subnets/IPv4/discord.lst"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/refs/heads/main/Services/discord.lst"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/refs/heads/main/Services/meta.lst"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/refs/heads/main/Services/twitter.lst"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/refs/heads/main/Services/google_ai.lst"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/refs/heads/main/Services/google_play.lst"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/refs/heads/main/Subnets/IPv4/Meta.lst"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/refs/heads/main/Subnets/IPv4/twitter.lst"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/refs/heads/main/Subnets/IPv6/Discord.lst"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/refs/heads/main/Subnets/IPv6/Meta.lst"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/refs/heads/main/Subnets/IPv6/Twitter.lst"
+          )
+
+          for url in "${FILES[@]}"; do
+            # получаем имя файла без расширения
+            base=$(basename "$url" .lst)
+
+            echo "Обрабатываем $base ..."
+
+            # === YAML для Clash ===
+            echo "payload:" > "yaml_config/${base}.yaml"
+            curl -sSL "$url" \
+              | grep -v '^\s*$' \
+              | sed 's/^\(\.\)/  - +\1/; t; s/^/  - +./' >> "yaml_config/${base}.yaml"
+
+            # === LIST для Shadowrocket ===
+            curl -sSL "$url" \
+              | grep -v '^\s*$' \
+              | while read line; do
+                  if echo "$line" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/'; then
+                    echo "IP-CIDR,$line"
+                  else
+                    clean=$(echo "$line" | sed 's/^\.//')
+                    echo "DOMAIN-SUFFIX,$clean"
+                  fi
+                done > "list_config/${base}.list"
+          done
 
       - name: Коммитим изменения в ветку files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          git add itdog_russia_inside_auto.yaml
-          
+
+          git add yaml_config/*.yaml list_config/*.list
+
           if git diff --cached --quiet; then
-            echo "Файл не изменился — пропускаем коммит."
+            echo "Файлы не изменились — пропускаем коммит."
           else
-            git commit -m "Auto-update itdog_russia_inside_auto.yaml on $(TZ='Europe/Moscow' date '+%Y-%m-%d %H:%M:%S') MSK"
+            git commit -m "Auto-update configs on $(TZ='Europe/Moscow' date '+%Y-%m-%d %H:%M:%S') MSK"
             git push origin files
           fi
