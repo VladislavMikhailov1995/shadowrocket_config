@@ -39,16 +39,20 @@ jobs:
           )
 
           for url in "${FILES[@]}"; do
-            # получаем имя файла без расширения
-            base=$(basename "$url" .lst)
+            # Имя файла и родительская папка
+            base=$(basename "$url" .lst)              # discord
+            parent=$(basename "$(dirname "$url")")    # Services / IPv4 / IPv6 / Russia
+            name="${parent}_${base}"                  # Services_discord
 
-            echo "Обрабатываем $base ..."
+            echo "Обрабатываем $url → $name"
 
             # === YAML для Clash ===
-            echo "payload:" > "yaml_config/${base}.yaml"
-            curl -sSL "$url" \
-              | grep -v '^\s*$' \
-              | sed 's/^\(\.\)/  - +\1/; t; s/^/  - +./' >> "yaml_config/${base}.yaml"
+            {
+              echo "payload:"
+              curl -sSL "$url" \
+                | grep -v '^\s*$' \
+                | sed 's/^\(\.\)/  - +\1/; t; s/^/  - +./'
+            } > "yaml_config/${name}.yaml"
 
             # === LIST для Shadowrocket ===
             curl -sSL "$url" \
@@ -60,7 +64,7 @@ jobs:
                     clean=$(echo "$line" | sed 's/^\.//')
                     echo "DOMAIN-SUFFIX,$clean"
                   fi
-                done > "list_config/${base}.list"
+                done > "list_config/${name}.list"
           done
 
       - name: Коммитим изменения в ветку files
