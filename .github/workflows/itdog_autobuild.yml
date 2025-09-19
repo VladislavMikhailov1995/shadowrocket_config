@@ -84,3 +84,4 @@ jobs:
           else
             git commit -m "Auto-update configs on $(TZ='Europe/Moscow' date '+%Y-%m-%d %H:%M:%S') MSK"
             git push origin files
+          fi
