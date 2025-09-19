@@ -40,9 +40,9 @@ jobs:
 
           for url in "${FILES[@]}"; do
             # Имя файла и родительская папка
-            base=$(basename "$url" .lst)              # discord
-            parent=$(basename "$(dirname "$url")")    # Services / IPv4 / IPv6 / Russia
-            name="${parent}_${base}"                  # Services_discord
+            base=$(basename "$url" .lst)
+            parent=$(basename "$(dirname "$url")")
+            name="${parent}_${base}"
 
             echo "Обрабатываем $url → $name"
 
@@ -59,8 +59,13 @@ jobs:
               | grep -v '^\s*$' \
               | while read line; do
                   if echo "$line" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/'; then
+                    # IPv4
+                    echo "IP-CIDR,$line"
+                  elif echo "$line" | grep -Eq '^([0-9a-fA-F:]+)+/'; then
+                    # IPv6
                     echo "IP-CIDR,$line"
                   else
+                    # домен
                     clean=$(echo "$line" | sed 's/^\.//')
                     echo "DOMAIN-SUFFIX,$clean"
                   fi
@@ -79,4 +84,3 @@ jobs:
           else
             git commit -m "Auto-update configs on $(TZ='Europe/Moscow' date '+%Y-%m-%d %H:%M:%S') MSK"
             git push origin files
-          fi
