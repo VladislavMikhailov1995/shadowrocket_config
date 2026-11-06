@@ -34,7 +34,8 @@
         "domain": [
           "ext:itdog-russia.dat:RUSSIA-INSIDE",
           "ext:itdog-russia.dat:GOOGLE-AI",
-          "ext:itdog-russia.dat:GOOGLE-PLAY"
+          "ext:itdog-russia.dat:GOOGLE-PLAY",
+          "ext:itdog-russia.dat:TELEGRAM"
         ],
         "balancerTag": "proxy"
       },
