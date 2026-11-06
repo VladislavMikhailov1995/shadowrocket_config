@@ -1,0 +1,61 @@
+{
+  "name": "Россия: Direct + VPN (автообновление)",
+  "outbounds": [
+    {}
+  ],
+  "geodata": {
+    "assets": [
+      {
+        "file": "itdog-russia.dat",
+        "url": "https://github.com/itdoginfo/allow-domains/releases/latest/download/geosite.dat"
+      },
+      {
+        "file": "friends-geoip.dat",
+        "url": "https://raw.githubusercontent.com/VladislavMikhailov1995/shadowrocket_config/files/xray_config/friends-geoip.dat"
+      }
+    ]
+  },
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "ruleTag": "VPN: проверка публичного IP",
+        "domain": [
+          "full:ipwhois.app",
+          "full:ipwho.is",
+          "full:api.ip.sb",
+          "full:ipapi.co",
+          "full:ipinfo.io"
+        ],
+        "balancerTag": "proxy"
+      },
+      {
+        "ruleTag": "VPN: заблокированные сайты и сервисы",
+        "domain": [
+          "ext:itdog-russia.dat:RUSSIA-INSIDE",
+          "ext:itdog-russia.dat:GOOGLE-AI",
+          "ext:itdog-russia.dat:GOOGLE-PLAY"
+        ],
+        "balancerTag": "proxy"
+      },
+      {
+        "ruleTag": "VPN: IP-подсети сервисов",
+        "ip": [
+          "ext:friends-geoip.dat:DISCORD",
+          "ext:friends-geoip.dat:META",
+          "ext:friends-geoip.dat:TELEGRAM",
+          "ext:friends-geoip.dat:TWITTER"
+        ],
+        "balancerTag": "proxy"
+      },
+      {
+        "ruleTag": "Direct: всё остальное",
+        "ip": [
+          "0.0.0.0/0",
+          "::/0"
+        ],
+        "outboundTag": "direct"
+      }
+    ]
+  }
+}
