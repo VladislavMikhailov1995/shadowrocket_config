@@ -1,4 +1,4 @@
-name: Update Xray GeoIP data
+name: Update OneXray routing data
 
 on:
   schedule:
@@ -15,37 +15,43 @@ jobs:
     steps:
       # The generator and the workflow are maintained on main.
       - name: Check out generator
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: source
 
       # Generated public files live on the repository's existing files branch.
       - name: Check out publication branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: files
           path: publish
           token: ${{ secrets.ACCESS_TOKEN }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
-      - name: Build Xray GeoIP database
+      - name: Build legacy GeoIP data
         run: >-
           python3 source/xray/build_geoip.py
           --output publish/xray_config/friends-geoip.dat
 
+      - name: Build static-profile routing data
+        run: >-
+          python3 source/xray/build_routing_data.py
+          --geosite-output publish/xray_config/friends-proxy-geosite.dat
+          --geoip-output publish/xray_config/friends-proxy-geoip.dat
+
       - name: Commit only changed data
         working-directory: publish
         run: |
-          git add xray_config/friends-geoip.dat
+          git add xray_config/friends-geoip.dat xray_config/friends-proxy-geosite.dat xray_config/friends-proxy-geoip.dat
           if git diff --cached --quiet; then
-            echo "No GeoIP changes."
+            echo "No routing-data changes."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "chore: update Xray GeoIP data"
+          git commit -m "chore: update OneXray routing data"
           git push origin files
