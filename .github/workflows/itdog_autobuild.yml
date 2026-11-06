@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Клонируем текущий репозиторий
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           token: ${{ secrets.ACCESS_TOKEN }}
           ref: files
@@ -48,9 +48,7 @@ jobs:
 
             # === YAML для Clash ===
             echo "payload:" > "yaml_config/${name}.yaml"
-            curl -sSL "$url" \
-              | grep -v '^\s*$' \
-              | while read line; do
+            curl -sSL "$url"               | grep -v '^\s*$'               | while read line; do
                   if echo "$line" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/'; then
                     echo "  - $line"          # IPv4
                   elif echo "$line" | grep -Eq '^([0-9a-fA-F:]+)+/'; then
@@ -62,9 +60,7 @@ jobs:
                 done >> "yaml_config/${name}.yaml"
 
             # === LIST для Shadowrocket ===
-            curl -sSL "$url" \
-              | grep -v '^\s*$' \
-              | while read line; do
+            curl -sSL "$url"               | grep -v '^\s*$'               | while read line; do
                   if echo "$line" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/'; then
                     echo "IP-CIDR,$line"
                   elif echo "$line" | grep -Eq '^([0-9a-fA-F:]+)+/'; then
