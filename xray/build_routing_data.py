@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 """Build OneXray GeoSite/GeoIP DAT files with one stable PROXY category.
 
@@ -29,6 +30,17 @@ IP_SOURCES = {
     "TELEGRAM": (f"{RAW}/Subnets/IPv4/telegram.lst", f"{RAW}/Subnets/IPv6/telegram.lst"),
     "TWITTER": (f"{RAW}/Subnets/IPv4/twitter.lst", f"{RAW}/Subnets/IPv6/twitter.lst"),
 }
+# A Shadowrocket list may contain domains and CIDRs in the same source. Its
+# entries are parsed strictly, so a source-format change cannot silently add
+# malformed rules to the routing data.
+SHADOWROCKET_SOURCES = {
+    "SPOTIFY": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Spotify/Spotify.list",
+}
+
+DOMAIN_PLAIN = 0
+DOMAIN_ROOT = 2
+DOMAIN_FULL = 3
+DomainRule = tuple[int, str]
 
 
 def varint(value: int) -> bytes:
@@ -58,9 +70,9 @@ def lines(url: str) -> list[str]:
     return [line.split("#", maxsplit=1)[0].strip() for line in fetch(url).splitlines()]
 
 
-def domains(url: str) -> set[str]:
+def domains(url: str) -> set[DomainRule]:
     # Xray RootDomain accepts suffix values without a leading dot.
-    return {value.lstrip(".").lower() for value in lines(url) if value}
+    return {(DOMAIN_ROOT, value.lstrip(".").lower()) for value in lines(url) if value}
 
 
 def networks(url: str) -> set[ipaddress.IPv4Network | ipaddress.IPv6Network]:
@@ -75,16 +87,56 @@ def networks(url: str) -> set[ipaddress.IPv4Network | ipaddress.IPv6Network]:
     return result
 
 
+def shadowrocket_rules(
+    url: str,
+) -> tuple[set[DomainRule], set[ipaddress.IPv4Network | ipaddress.IPv6Network]]:
+    """Parse the routing forms that can safely be represented in Xray DAT."""
+    domain_values: set[DomainRule] = set()
+    ip_values: set[ipaddress.IPv4Network | ipaddress.IPv6Network] = set()
+    domain_types = {
+        "DOMAIN": DOMAIN_FULL,
+        "DOMAIN-SUFFIX": DOMAIN_ROOT,
+        "DOMAIN-KEYWORD": DOMAIN_PLAIN,
+    }
+    ignored_types = {"USER-AGENT"}
+
+    for line_number, line in enumerate(lines(url), start=1):
+        if not line:
+            continue
+        rule_type, separator, raw_value = line.partition(",")
+        if not separator or not raw_value:
+            raise ValueError(f"{url}:{line_number}: invalid Shadowrocket rule {line!r}")
+
+        rule_type = rule_type.strip().upper()
+        value = raw_value.split(",", maxsplit=1)[0].strip()
+        if rule_type in domain_types:
+            if not value or "," in value:
+                raise ValueError(f"{url}:{line_number}: invalid domain {value!r}")
+            domain_values.add((domain_types[rule_type], value.lstrip(".").lower()))
+        elif rule_type in {"IP-CIDR", "IP-CIDR6"}:
+            try:
+                ip_values.add(ipaddress.ip_network(value, strict=True))
+            except ValueError as exc:
+                raise ValueError(f"{url}:{line_number}: invalid CIDR {value!r}") from exc
+        elif rule_type in ignored_types:
+            # Xray GeoSite/GeoIP has no User-Agent equivalent. The service's
+            # hostname and CIDR rules still cover network traffic safely.
+            continue
+        else:
+            raise ValueError(f"{url}:{line_number}: unsupported Shadowrocket rule {rule_type!r}")
+
+    return domain_values, ip_values
+
+
 def network_sort_key(network: ipaddress.IPv4Network | ipaddress.IPv6Network) -> tuple[int, int, int]:
     return network.version, int(network.network_address), network.prefixlen
 
 
-def build_geosite(values: set[str]) -> bytes:
+def build_geosite(values: set[DomainRule]) -> bytes:
     # GeoSiteList { entry: GeoSite { country_code: "PROXY", domain: [...] } }
     geosite = bytearray(bytes_field(1, b"PROXY"))
-    for value in sorted(values):
-        # Domain.Type.RootDomain = 2: matches the domain and every subdomain.
-        domain = uint_field(1, 2) + bytes_field(2, value.encode("utf-8"))
+    for domain_type, value in sorted(values, key=lambda item: (item[1], item[0])):
+        domain = uint_field(1, domain_type) + bytes_field(2, value.encode("utf-8"))
         geosite.extend(bytes_field(2, domain))
     return bytes_field(1, bytes(geosite))
 
@@ -114,6 +166,10 @@ def main() -> None:
 
     domain_values = set().union(*(domains(url) for url in DOMAIN_SOURCES.values()))
     ip_values = set().union(*(networks(url) for urls in IP_SOURCES.values() for url in urls))
+    for url in SHADOWROCKET_SOURCES.values():
+        source_domains, source_networks = shadowrocket_rules(url)
+        domain_values.update(source_domains)
+        ip_values.update(source_networks)
     geosite_data = build_geosite(domain_values)
     geoip_data = build_geoip(ip_values)
     write_atomically(args.geosite_output, geosite_data)
