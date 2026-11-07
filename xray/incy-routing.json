@@ -1,0 +1,33 @@
+{
+  "Name": "Россия: Direct + VPN",
+  "GlobalProxy": "false",
+  "RemoteDNSType": "DoH",
+  "RemoteDNSDomain": "https://cloudflare-dns.com/dns-query",
+  "RemoteDNSIP": "1.1.1.1",
+  "DomesticDNSType": "DoH",
+  "DomesticDNSDomain": "https://dns.google/dns-query",
+  "DomesticDNSIP": "8.8.8.8",
+  "Geoipurl": "https://raw.githubusercontent.com/VladislavMikhailov1995/shadowrocket_config/files/xray_config/friends-proxy-geoip.dat",
+  "Geositeurl": "https://raw.githubusercontent.com/VladislavMikhailov1995/shadowrocket_config/files/xray_config/friends-proxy-geosite.dat",
+  "DnsHosts": {
+    "cloudflare-dns.com": "1.1.1.1",
+    "dns.google": "8.8.8.8"
+  },
+  "DirectSites": [],
+  "DirectIp": [],
+  "ProxySites": [
+    "full:ipwhois.app",
+    "full:ipwho.is",
+    "full:api.ip.sb",
+    "full:ipapi.co",
+    "full:ipinfo.io",
+    "geosite:PROXY"
+  ],
+  "ProxyIp": [
+    "geoip:PROXY"
+  ],
+  "BlockSites": [],
+  "BlockIp": [],
+  "DomainStrategy": "IPIfNonMatch",
+  "FakeDNS": "false"
+}
