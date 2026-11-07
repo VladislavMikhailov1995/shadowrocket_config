@@ -43,10 +43,16 @@ jobs:
           --geosite-output publish/xray_config/friends-proxy-geosite.dat
           --geoip-output publish/xray_config/friends-proxy-geoip.dat
 
+      - name: Write routing-data checksums
+        working-directory: publish
+        run: |
+          sha256sum xray_config/friends-proxy-geosite.dat | awk '{print $1}' > xray_config/friends-proxy-geosite.dat.sha256
+          sha256sum xray_config/friends-proxy-geoip.dat | awk '{print $1}' > xray_config/friends-proxy-geoip.dat.sha256
+
       - name: Commit only changed data
         working-directory: publish
         run: |
-          git add xray_config/friends-geoip.dat xray_config/friends-proxy-geosite.dat xray_config/friends-proxy-geoip.dat
+          git add xray_config/friends-geoip.dat xray_config/friends-proxy-geosite.dat xray_config/friends-proxy-geoip.dat xray_config/friends-proxy-geosite.dat.sha256 xray_config/friends-proxy-geoip.dat.sha256
           if git diff --cached --quiet; then
             echo "No routing-data changes."
             exit 0
