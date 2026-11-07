@@ -1,5 +1,6 @@
 {
   "Name": "Россия: Direct + VPN",
+  "LastUpdated": "1794077687",
   "GlobalProxy": "false",
   "RemoteDNSType": "DoH",
   "RemoteDNSDomain": "https://cloudflare-dns.com/dns-query",
