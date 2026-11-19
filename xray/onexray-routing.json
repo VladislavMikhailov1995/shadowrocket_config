@@ -3,6 +3,18 @@
   "outbounds": [
     {}
   ],
+  "dns": {
+    "servers": [
+      {
+        "tag": "app-dns-proxy",
+        "address": "https://1.1.1.1/dns-query"
+      },
+      {
+        "tag": "app-dns-direct",
+        "address": "https://common.dot.dns.yandex.net/dns-query"
+      }
+    ]
+  },
   "geodata": {
     "assets": [
       {
