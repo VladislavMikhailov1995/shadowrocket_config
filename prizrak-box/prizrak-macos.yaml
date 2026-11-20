@@ -1,0 +1,127 @@
+---
+mode: rule
+log-level: info
+allow-lan: false
+ipv6: true
+unified-delay: true
+tcp-concurrent: true
+enable-process: true
+find-process-mode: always
+keep-alive-interval: 30
+profile:
+  store-selected: true
+  store-fake-ip: true
+  smart-collector-size: 100
+geodata-mode: true
+geodata-loader: memconservative
+geo-auto-update: false
+geox-url:
+  geoip: https://raw.githubusercontent.com/VladislavMikhailov1995/shadowrocket_config/files/xray_config/friends-proxy-geoip.dat#prizrak=1241936d
+  geosite: https://raw.githubusercontent.com/VladislavMikhailov1995/shadowrocket_config/files/xray_config/friends-proxy-geosite.dat#prizrak=1241936d
+sniffer:
+  enable: true
+  force-dns-mapping: true
+  parse-pure-ip: true
+  override-destination: false
+  sniff:
+    HTTP:
+      ports:
+      - 80
+      - 8080-8880
+    TLS:
+      ports:
+      - 443
+      - 8443
+tun:
+  dns-mode: native
+  enable: true
+  stack: gvisor
+  auto-route: true
+  auto-detect-interface: true
+  dns-hijack:
+  - any:53
+  - tcp://any:53
+  strict-route: true
+hosts:
+  cloudflare-dns.com: 1.1.1.1
+dns:
+  enable: true
+  ipv6: false
+  use-hosts: true
+  use-system-hosts: false
+  enhanced-mode: redir-host
+  default-nameserver:
+  - 77.88.8.8
+  - 1.1.1.1
+  proxy-server-nameserver:
+  - https://77.88.8.8/dns-query
+  direct-nameserver:
+  - https://77.88.8.8/dns-query
+  nameserver:
+  - "https://cloudflare-dns.com/dns-query#\U0001F47BPROXY"
+  nameserver-policy:
+    geosite:proxy:
+    - "https://cloudflare-dns.com/dns-query#\U0001F47BPROXY"
+    rule-set:proxy-domains:
+    - "https://cloudflare-dns.com/dns-query#\U0001F47BPROXY"
+proxy-groups:
+- name: "\U0001F6E1️ VPN"
+  icon: https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Hijacking.png
+  type: select
+  proxies:
+  - "⚡️ Авто"
+  url: https://www.gstatic.com/generate_204
+- name: "⚡️ Авто"
+  type: url-test
+  tolerance: 150
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  hidden: true
+  proxies: []
+- name: "\U0001F47BPROXY"
+  type: select
+  hidden: true
+  proxies:
+  - "\U0001F6E1️ VPN"
+  remnawave:
+    include-proxies: false
+- name: "\U0001F47BNO_VPN"
+  type: select
+  hidden: true
+  proxies:
+  - DIRECT
+  remnawave:
+    include-proxies: false
+- name: "⛔\U0001F47BBLOCK"
+  type: select
+  hidden: true
+  proxies:
+  - REJECT
+  remnawave:
+    include-proxies: false
+rule-providers:
+  direct-ips:
+    type: inline
+    behavior: ipcidr
+    payload:
+    - 10.0.0.0/8
+    - 172.16.0.0/12
+    - 192.168.0.0/16
+    - 169.254.0.0/16
+    - 224.0.0.0/4
+    - 255.255.255.255/32
+  proxy-domains:
+    type: inline
+    behavior: domain
+    payload:
+    - ipwhois.app
+    - ipwho.is
+    - api.ip.sb
+    - ipapi.co
+    - ipinfo.io
+rules:
+- "GEOSITE,proxy,\U0001F47BPROXY"
+- "RULE-SET,proxy-domains,\U0001F47BPROXY"
+- "RULE-SET,direct-ips,\U0001F47BNO_VPN"
+- "GEOIP,proxy,\U0001F47BPROXY"
+- "MATCH,\U0001F47BNO_VPN"
